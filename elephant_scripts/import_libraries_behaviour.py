@@ -3,6 +3,7 @@ This script contains import statements for the libraries to be used in the analy
 
 """
 import warnings
+
 warnings.filterwarnings("ignore")
 import tensorflow as tf
 import pandas as pd
@@ -14,7 +15,8 @@ import matplotlib.pyplot as plt
 import librosa
 import umap.umap_ as umap
 import sys
-sys.path.insert(0, '..')
+
+sys.path.insert(0, "..")
 import seaborn as sns
 import scipy
 import scipy.stats as stats
@@ -37,4 +39,3 @@ from sklearn.metrics import r2_score
 
 
 print("Main libraries successfully imported")
-

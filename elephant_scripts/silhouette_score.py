@@ -18,23 +18,25 @@ class SilhouetteScores:
         self.embedding = embedding
         self.labels = labels
         self.labeltypes = sorted(list(set(labels)))
-        
+
         self.avrg_SIL = silhouette_score(embedding, labels)
         self.sample_SIL = silhouette_samples(embedding, labels)
-    
+
     def get_avrg_score(self):
         return self.avrg_SIL
-    
+
     def get_score_per_class(self):
         scores = np.zeros((len(self.labeltypes),))
         for i, label in enumerate(self.labeltypes):
-            ith_cluster_silhouette_values = self.sample_SIL[self.labels == label]
+            ith_cluster_silhouette_values = self.sample_SIL[
+                self.labels == label
+            ]
             scores[i] = np.mean(ith_cluster_silhouette_values)
         return scores
-    
+
     def get_sample_scores(self):
         return self.sample_SIL
-    
+
     def project_scores_as_table(silhouette_scores, label_names):
         score_table = []
         for label_name, scores in silhouette_scores.items():
@@ -45,8 +47,15 @@ class SilhouetteScores:
         table = tabulate(score_table, headers=headers, tablefmt="fancy_grid")
         return table
 
-    def plot_sil(self, mypalette="Set2", embedding_type=None, outname=None, 
-             label_font_size=12, xlab_font_size=12, ylab_font_size=12):
+    def plot_sil(
+        self,
+        mypalette="Set2",
+        embedding_type=None,
+        outname=None,
+        label_font_size=12,
+        xlab_font_size=12,
+        ylab_font_size=12,
+    ):
         labeltypes = sorted(list(set(self.labels)))
         n_clusters = len(labeltypes)
 
@@ -63,17 +72,29 @@ class SilhouetteScores:
         labeltypes = sorted(labeltypes, reverse=True)
 
         for i, cluster_label in enumerate(labeltypes):
-            ith_cluster_silhouette_values = self.sample_SIL[self.labels == cluster_label]
+            ith_cluster_silhouette_values = self.sample_SIL[
+                self.labels == cluster_label
+            ]
             ith_cluster_silhouette_values.sort()
 
             size_cluster_i = ith_cluster_silhouette_values.shape[0]
             y_upper = y_lower + size_cluster_i
 
-            ax1.fill_betweenx(np.arange(y_lower, y_upper),
-                            0, ith_cluster_silhouette_values,
-                            facecolor=color_dict[cluster_label], edgecolor=color_dict[cluster_label], alpha=0.7)
+            ax1.fill_betweenx(
+                np.arange(y_lower, y_upper),
+                0,
+                ith_cluster_silhouette_values,
+                facecolor=color_dict[cluster_label],
+                edgecolor=color_dict[cluster_label],
+                alpha=0.7,
+            )
 
-            ax1.text(-0.05, y_lower + 0.5 * size_cluster_i, cluster_label, fontsize=label_font_size)
+            ax1.text(
+                -0.05,
+                y_lower + 0.5 * size_cluster_i,
+                cluster_label,
+                fontsize=label_font_size,
+            )
 
             y_lower = y_upper + 10
 
@@ -90,5 +111,6 @@ class SilhouetteScores:
 
         if outname:
             plt.savefig(outname, facecolor="white")
+
 
 print("Functions for Statistical Analysis successfully imported")

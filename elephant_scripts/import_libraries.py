@@ -3,6 +3,7 @@ This script contains import statements for the libraries to be used in the class
 
 """
 import warnings
+
 warnings.filterwarnings("ignore")
 import tensorflow as tf
 import pandas as pd
@@ -14,7 +15,8 @@ import matplotlib.pyplot as plt
 import librosa
 import umap.umap_ as umap
 import sys
-sys.path.insert(0, '..')
+
+sys.path.insert(0, "..")
 import seaborn as sns
 import scipy
 from scipy.spatial.distance import pdist, squareform
@@ -34,4 +36,3 @@ from collections import namedtuple
 import plotly.express as px
 
 print("Main libraries successfully imported")
-

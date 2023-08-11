@@ -19,9 +19,18 @@ DATA = P_DIR / "data"
 # Information about the info_file.csv
 LABEL_COL = "call-type"  # -->name of column that contains labels
 
-NA_DESCRIPTORS = [0, np.nan, "NA", "na",  # Which values indicate that this vocalisation is unlabelled?
-                  "not available", "None",
-                  "Unknown", "unknown", None, ""]
+NA_DESCRIPTORS = [
+    0,
+    np.nan,
+    "NA",
+    "na",  # Which values indicate that this vocalisation is unlabelled?
+    "not available",
+    "None",
+    "Unknown",
+    "unknown",
+    None,
+    "",
+]
 
 # Check if directories are present
 if not os.path.isdir(AUDIO_IN):
@@ -32,7 +41,7 @@ if not os.path.isdir(DATA):
     print("Data directory created:", DATA)
 
 # Read in files
-info_file = os.path.join(os.path.sep, DATA, '1.elephant_call_type_df.csv')
+info_file = os.path.join(os.path.sep, DATA, "1.elephant_call_type_df.csv")
 
 if os.path.isfile(info_file):
     df = pd.read_csv(info_file)
@@ -42,22 +51,31 @@ else:
     print("Creating default input file without labels")
     audiofiles = os.listdir(AUDIO_IN)
     if len(audiofiles) > 0:
-        df = pd.DataFrame({'filename': [os.path.basename(x) for x in audiofiles], 'label': ["unknown"] * len(audiofiles)})
+        df = pd.DataFrame(
+            {
+                "filename": [os.path.basename(x) for x in audiofiles],
+                "label": ["unknown"] * len(audiofiles),
+            }
+        )
         print("Default input file created")
     else:
         print("No audio files found in audio directory")
 
-audiofiles = df['filename'].values
+audiofiles = df["filename"].values
 files_in_audio_directory = os.listdir(AUDIO_IN)
 
 # Are there any files that are in the info_file.csv, but not in AUDIO_IN?
 missing_files = list(set(audiofiles) - set(files_in_audio_directory))
 if len(missing_files) > 0:
-    print("Warning:", len(missing_files), "files with no matching audio in audio folder")
+    print(
+        "Warning:",
+        len(missing_files),
+        "files with no matching audio in audio folder",
+    )
 
 audio_filepaths = [os.path.join(os.path.sep, AUDIO_IN, x) for x in audiofiles]
 
-df['audio_filepaths'] = audio_filepaths
+df["audio_filepaths"] = audio_filepaths
 print("Audio file paths added to DataFrame")
 
 print("Vocalisation Dataset successfully loaded")
