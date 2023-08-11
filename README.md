@@ -3,9 +3,9 @@ MSc project exploring elephant vocalisations using unsupervised learning
 
 This repository contains the code needed to reproduce all of the analysis in the dissertation "Decoding Elephant Vocalisations Using Unsupervised Learning". The code is split into two notebooks, one for each of the two questions examined in the dissertation.
 
-Question 1: Can the unsupervised methods accurately classify the rumble, roar, and trumpet call-types?
+Question 1: Can the unsupervised methods accurately classify the rumble, roar, and trumpet call-types? This is explored in the Question_1_call-types_master.ipynb notebook.
 
-Question 2: Can the unsupervised methods identify behavioural context from rumble vocalisations?
+Question 2: Can the unsupervised methods identify behavioural context from rumble vocalisations? This is explored in the Question_2_behavioural_context.ipynb notebook.
 
 The repository is structured as follows:
 
