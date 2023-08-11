@@ -1,0 +1,5 @@
+filename,start_time,end_time,duration,low_freq,high_freq,call-type,Combination_Call,New_Combination_Call,Final_Category,Final_Subcategory,Distress_old,Distress,Distress_factor,Age,Age_factor,Sex,Sex_factor,Age_Sex,combo_call,simple_combo,orig_call,orig_comb
+opp_330_ru.wav,1.628424396,3.79023726,2.161812864,1.220703125,326.4648438,rumble,Single call,Single call,Nursing,Nursing,na,Unknown,2,Juvenile,2,Unknown,0,Unknown,Rumble,Rumble,ru,Single
+opp_332_ru.wav,2.229881611,5.75206721,3.522185599,1.635742188,197.6318359,rumble,Single call,Single call,Logistics,Leaving,na,Unknown,2,Adult,4,Female,1,Adult Female,Rumble,Rumble,ru,Single
+opp_333_ru.wav,3.098900929,6.639744627,3.540843698,0.756835938,197.1679688,rumble,Single call,Single call,Unspecific,Unspecific,na,Unknown,2,Adult,4,Female,1,Adult Female,Rumble,Rumble,ru,Single
+opp_560_ru.wav,2.29911017,6.93449148,4.63538131,1.14746094,546.850586,rumble,Single call,Single call,Separation,Separation,No distress,No distress,0,Sub-Adult,3,Male,2,Sub-Adult Male,Rumble,Rumble,ru,Single
