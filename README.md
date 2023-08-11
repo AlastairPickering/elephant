@@ -1,4 +1,4 @@
-# Decoding Elephant Vocalisations Using Unsupervised Learning
+# Decoding Elephant Vocalisations Using Unsupervised Deep Learning
 MSc project exploring elephant vocalisations using unsupervised learning
 
 This repository contains the code needed to reproduce all of the analysis in the dissertation "Decoding Elephant Vocalisations Using Unsupervised Learning". The code is split into two notebooks, one for each of the two questions examined in the dissertation.
