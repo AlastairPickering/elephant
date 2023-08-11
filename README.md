@@ -9,7 +9,7 @@ Question 2: Can the unsupervised methods identify behavioural context from rumbl
 
 The repository is structured as follows:
 
-**elephant/** This top level folders contains the two Jupyter notebooks needed to run the code for the two questions. 
+**elephant/** This top level folder contains the two Jupyter notebooks needed to run the code for the two questions. 
 
 **elephant/audio_dir** A sample of 9 audio files from the analysis. These were recorded by the [Elephant Listening Project](https://www.elephantlisteningproject.org/)
 
