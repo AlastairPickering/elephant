@@ -107,6 +107,9 @@ def wav_cookiecutter(
         wav, annotation.low_freq, annotation.high_freq, samplerate=samplerate
     )
 
+    # Extract audio segment based on annotation times
+    wav = extract_audio(wav, annotation, samplerate=samplerate)
+    
     annotation_duration = annotation.end_time - annotation.start_time
     num_windows = np.ceil(annotation_duration / window_size)
     return_duration = num_windows * window_size
