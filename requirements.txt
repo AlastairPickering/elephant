@@ -1,0 +1,15 @@
+pandas
+numpy
+matplotlib
+statsmodels
+seaborn
+scikit-learn
+scipy
+tensorflow
+tensorflow_hub
+librosa
+tqdm
+umap-learn
+plotly
+ipython
+tabulate

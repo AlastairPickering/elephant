@@ -1,20 +1,21 @@
 """
-This script carries out all of the audio pre-processing steps before extracting the acoustic features (embeddings) using the pre-trained CNN vggish and adding in the missing duration information.
+This script carries out all of the audio pre-processing steps before extracting
+the acoustic features (embeddings) using the pre-trained CNN vggish and adding
+in the missing duration information.
 """
 # Import libraries
 
-import tensorflow as tf
-import tensorflow_hub as hub
-from pathlib import Path
-import pandas as pd
-import numpy as np
-import librosa
-from collections import namedtuple
-import scipy
-import matplotlib.pyplot as plt
-import seaborn as sns
-from tqdm import tqdm
 import warnings
+from pathlib import Path
+
+import librosa
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy
+import seaborn as sns
+import tensorflow_hub as hub
+from tqdm import tqdm
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore")
@@ -23,7 +24,25 @@ with warnings.catch_warnings():
 
 P_DIR = Path.cwd()
 
-# Define functions needed to read audio files, apply frequency bandpass filter, extract the annotation based on timestamp, normalise amplitude, zero-pad and centre the annotation with the vggish-compatible 0.96s input window.
+# Here we define the default values for the parameters that will be used in the
+# audio pre-processing steps.
+DEFAULT_SAMPLERATE = 4000  # Hz
+
+# This is the duration of audio that will be extracted from the original audio
+# and passed to the vggish model. The vggish model takes 0.96s
+# of audio at 16kHz as input, which is 15360 samples. Since the samplerate of
+# the audio files is 4000Hz, we need to change the window duration to 4s
+# in order to extract the correct number of samples.
+DEFAULT_WINDOW_SIZE = 4  # seconds
+
+# Audio of annotations will be extracted from the original audio file and
+# inserted into a 4s window. This parameter defines the position of the
+# annotation within the 4s window.
+DEFAULT_CLIP_POSITION = "middle"
+
+# Define functions needed to read audio files, apply frequency bandpass filter,
+# extract the annotation based on timestamp, normalise amplitude, zero-pad and
+# centre the annotation with the vggish-compatible 0.96s input window.
 
 
 def read_audio(path):
@@ -31,14 +50,16 @@ def read_audio(path):
     return wav, sr
 
 
-def apply_bandpass_filter(wav, low_freq, high_freq):
+def apply_bandpass_filter(
+    wav, low_freq, high_freq, samplerate=DEFAULT_SAMPLERATE, order=5
+):
     # Define the bandpass filter
-    sr = 4000
-    nyquist_freq = 0.5 * sr
-    low_normalized = low_freq / sr
-    high_normalized = high_freq / sr
     sos = scipy.signal.butter(
-        5, [low_normalized, high_normalized], btype="band", output="sos"
+        order,
+        [low_freq, high_freq],
+        fr=samplerate,
+        btype="band",
+        output="sos",
     )
 
     # Apply the bandpass filter to the signal
@@ -46,10 +67,9 @@ def apply_bandpass_filter(wav, low_freq, high_freq):
     return filtered_signal
 
 
-def extract_audio(wav, annotation):
-    sr = 4000
-    start_index = int(annotation.start_time * sr)
-    end_index = int(annotation.end_time * sr)
+def extract_audio(wav, annotation, samplerate=DEFAULT_SAMPLERATE):
+    start_index = int(annotation.start_time * samplerate)
+    end_index = int(annotation.end_time * samplerate)
     extracted_audio = wav[start_index:end_index]
     return extracted_audio
 
@@ -65,15 +85,28 @@ def normalise_sound_file(data):
 
 
 def wav_cookiecutter(
-    path, annotation, window_size, position, low_freq, high_freq
+    annotation,
+    window_size=DEFAULT_WINDOW_SIZE,
+    position=DEFAULT_CLIP_POSITION,
+    samplerate=DEFAULT_SAMPLERATE,
 ):
+    """Extract the acoustic features of a single annotation."""
+    # Get path of the audio file from the annotation info
+    path = str(annotation.audio_filepaths)
+
     # Read the audio
     wav, sr = read_audio(path)
 
-    # Apply the bandpass filter to the signal
-    wav = apply_bandpass_filter(wav, low_freq, high_freq)
+    # If the samplerate of the audio file does not match the samplerate
+    # then the filtering and annotation extraction will produce
+    # incorrect results, so we need to check this.
+    assert sr == samplerate
 
-    Annotation = namedtuple("Annotation", "start_time end_time")
+    # Apply the bandpass filter to the signal
+    wav = apply_bandpass_filter(
+        wav, annotation.low_freq, annotation.high_freq, samplerate=samplerate
+    )
+
     annotation_duration = annotation.end_time - annotation.start_time
     num_windows = np.ceil(annotation_duration / window_size)
     return_duration = num_windows * window_size
@@ -108,47 +141,38 @@ def wav_cookiecutter(
     return normalised_clip
 
 
-# Pass the pre-processed data to the vggish model to extract the automated acoustic features
+# Pass the pre-processed data to the vggish model to extract the automated
+# acoustic features
 
 
-def feature_extraction(df):
+def feature_extraction(
+    df, samplerate=DEFAULT_SAMPLERATE, window_size=DEFAULT_WINDOW_SIZE
+):
+    """Extracts all features from annotation data in dataframe."""
     # Load the vggish model
     model = hub.load("https://tfhub.dev/google/vggish/1")
 
     # Extract VGGish features
     results = []
-    for _, row in tqdm(df.iterrows(), total=len(df), desc="Processing"):
-        path = str(row.audio_filepaths)
-        Annotation = namedtuple("Annotation", "start_time end_time")
-        annotation = Annotation(row.start_time, row.end_time)
-        sr = 4000
-        window_size = 4
-        low_freq = (
-            row.low_freq
-        )  # Extract low frequency value from the DataFrame
-        high_freq = (
-            row.high_freq
-        )  # Extract high frequency value from the DataFrame
-
-        # Apply the wav_cookiecutter function combining all of the audio pre-processing steps
+    for _, annotation in tqdm(df.iterrows(), total=len(df), desc="Processing"):
+        # Apply the wav_cookiecutter function combining all of the audio
+        # pre-processing steps
         wav = wav_cookiecutter(
-            path, annotation, window_size, "middle", low_freq, high_freq
+            annotation,
+            window_size=window_size,
+            position="middle",
+            samplerate=samplerate,
         )
 
         embeddings = model(wav)
-        assert (
-            embeddings.shape[1] == 128
-        )  # Check the number of features per frame
+        assert embeddings.shape[1] == 128  # Check the number of features per frame
 
         # Store info of the embeddings of each frame
-        for index, embedding in enumerate(embeddings):
+        for embedding in embeddings:
             results.append(
                 {
-                    "recording_id": row.recording_id,
-                    **{
-                        f"feature_{n}": feat
-                        for n, feat in enumerate(embedding)
-                    },
+                    "recording_id": annotation.recording_id,
+                    **{f"feature_{n}": feat for n, feat in enumerate(embedding)},
                 }
             )
 
@@ -182,15 +206,11 @@ def feature_heatmap(results):
 
     # Visualise the embeddings in a heatmap
     plt.figure(figsize=(12, 10))  # Adjust the figure size as needed
-    sns.heatmap(
-        normalised_results, cmap="magma", xticklabels=False, yticklabels=False
-    )
+    sns.heatmap(normalised_results, cmap="magma", xticklabels=False, yticklabels=False)
     plt.title("Heatmap of VGGish features")
     plt.xlabel("VGGish features")
     plt.ylabel("Recordings")
     plt.show()
 
 
-print(
-    "Functions for Audio Pre-processing and Feature Extraction successfully loaded"
-)
+print("Functions for Audio Pre-processing and Feature Extraction successfully loaded")
