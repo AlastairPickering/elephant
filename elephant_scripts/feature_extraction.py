@@ -57,7 +57,7 @@ def apply_bandpass_filter(
     sos = scipy.signal.butter(
         order,
         [low_freq, high_freq],
-        fr=samplerate,
+        fs=samplerate,
         btype="band",
         output="sos",
     )
