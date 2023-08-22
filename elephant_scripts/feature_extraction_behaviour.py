@@ -1,5 +1,7 @@
 """
-This script carries out all of the audio pre-processing steps before extracting the acoustic features (embeddings) using the pre-trained CNN vggish and adding in the missing duration information.
+This script carries out all of the audio pre-processing steps 
+before extracting the acoustic features (embeddings) using the 
+pre-trained CNN vggish and adding in the missing duration information.
 """
 # Import libraries
 
@@ -63,7 +65,35 @@ def normalise_sound_file(data):
 
     return normalised_data
 
+def zero_pad(annotation, window_size, samplerate, wav):
+    """
+    Zero-pad and centre the input audio waveform based on the provided annotation.
 
+    Args:
+        annotation (Annotation): The annotation object containing start and end times.
+        window_size (float): The duration of each window for acoustic analysis.
+        samplerate (int): The sample rate of the audio.
+        wav (numpy.ndarray): Input audio waveform.
+
+    Returns:
+        numpy.ndarray: Zero-padded and centred audio waveform.
+    """
+    annotation_duration = annotation.end_time - annotation.start_time
+    num_windows = np.ceil(annotation_duration / window_size)
+    return_duration = num_windows * window_size
+    return_size = int(return_duration * samplerate)
+
+    # Calculate the amount of zero-padding needed
+    padding_needed = max(0, return_size - len(wav))
+
+    # Calculate the start index for placing the waveform
+    start_index = max(0, padding_needed // 2)
+
+    # Pad the waveform with zeros and centre it
+    padded_wav = np.pad(wav, (start_index, return_size - len(wav) - start_index))
+
+    return padded_wav
+    
 def wav_cookiecutter(
     path, annotation, window_size, position, low_freq, high_freq
 ):
@@ -73,43 +103,22 @@ def wav_cookiecutter(
     # Apply the bandpass filter to the signal
     wav = apply_bandpass_filter(wav, low_freq, high_freq)
 
-    Annotation = namedtuple("Annotation", "start_time end_time")
-    annotation_duration = annotation.end_time - annotation.start_time
-    num_windows = np.ceil(annotation_duration / window_size)
-    return_duration = num_windows * window_size
-    return_size = int(return_duration * sr)
+    # Extract audio segment based on annotation times
+    wav = extract_audio(wav, annotation, samplerate=samplerate)
 
-    # Pad the wav array to match return_size
-    if len(wav) < return_size:
-        wav = np.pad(wav, (0, return_size - len(wav)))
-    elif len(wav) > return_size:
-        wav = wav[:return_size]
-
-    return_clip = np.zeros(return_size)
-
-    if position == "start":
-        return_clip[: len(wav)] = wav
-    elif position == "middle":
-        annotation_size = len(wav)
-        size_difference = return_size - annotation_size
-        start = int(size_difference // 2)
-        end = int(start + len(wav))
-
-        if start >= 0 and end <= return_size:
-            return_clip[start:end] = wav
-        else:
-            start = max(0, -start)
-            end = min(return_size, return_size - size_difference)
-            return_clip[start:end] = wav[: end - start]
+    # Zero-pad the wav array based on the annotation
+    wav = zero_pad(annotation, window_size, samplerate, wav)
 
     # Normalise the sound file
-    normalised_clip = normalise_sound_file(return_clip)
+    normalised_clip = normalise_sound_file(wav)
 
-    return normalised_clip
+    # Re-apply the bandpass filter to remove artifacts
+    refiltered_wav = apply_bandpass_filter(normalised_clip, annotation.low_freq, annotation.high_freq, samplerate)
+
+    return refiltered_wav
 
 
 # Pass the pre-processed data to the vggish model to extract the automated acoustic features
-
 
 def feature_extraction(df):
     # Load the vggish model
