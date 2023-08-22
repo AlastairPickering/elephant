@@ -1,16 +1,18 @@
 """
-This script projects the 129D acoustic embeddings into 1D latent space using the Uniform Manifold Approximation and Projection (UMAP) algorithm.
+This script projects the 129D acoustic embeddings into 2D latent
+space using the Uniform Manifold Approximation and Projection (UMAP) algorithm.
 
 """
+import pandas as pd
 import umap
 from sklearn.preprocessing import StandardScaler
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 def z_score_transform(df):
-    # Standardise each column in the dataset. Standardised is mean=0 variance=1.
+    """Standardise each column in the dataset.
+
+    Standardised is mean=0 variance=1.
+    """
     scaler = StandardScaler()
     scaler.fit(df)
     transformed_df = pd.DataFrame(
@@ -18,49 +20,49 @@ def z_score_transform(df):
     )
     return transformed_df
 
+def fit_umap(transformed_df, N_COMP, metric, min_dist, random_state):
+    # Function to fit UMAP and return the embedding
+    reducer = umap.UMAP(n_components=N_COMP, metric=metric, min_dist=min_dist, random_state=random_state)
+    return reducer.fit_transform(transformed_df)
 
-def umap_projections(transformed_df, metadata_df, N_COMP, metric, min_dist):
+def merge_metadata(embedding_df, metadata_df):
+    # Function to merge the UMAP embeddings with metadata
+    return pd.merge(embedding_df, metadata_df, on="filename")
+
+def umap_projections(transformed_df, metadata_df, N_COMP, metric, min_dist, random_state):
     """
     Args:
-        results_df (pd.DataFrame): DataFrame containing the acoustic embeddings.
-        metadata_df (pd.DataFrame): DataFrame containing metadata information.
+        transformed_df (pd.DataFrame): DataFrame containing the 128 acoustic embeddings from VGGish and duration.
+                                    Index should be filename - no other columns should be present
+        metadata_df (pd.DataFrame): DataFrame containing metadata information. Must have a minimum of "Call-Type" 
+                                    labels
         N_COMP (int): Number of UMAP components.
         metric (str): Distance metric for UMAP.
         min_dist (float): Minimum distance for UMAP.
+        random_state (int): Specify random_state for initialisation - the number is immaterial, ensure the same number
+                            is used throughout
 
     Returns:
         pd.DataFrame: DataFrame with UMAP projections and metadata.
     """
+    # Normalise the data using z-score
+    normalised = z_score_transform(transformed_df)
 
-    z_score_transform(transformed_df)
-    # Specify UMAP set-up and parameters
-    reducer = umap.UMAP(n_components=N_COMP, metric=metric, min_dist=min_dist)
+    # Fit UMAP and obtain embeddings
+    embedding = fit_umap(normalised, N_COMP, metric, min_dist, random_state)
 
-    print("Acoustic features normalised")
+    # Create a DataFrame with UMAP coordinates
+    results = pd.DataFrame(
+        {
+            "filename": transformed_df["filename"],
+            **{f"UMAP{i + 1}": embedding[:, i] for i in range(N_COMP)},
+        }
+    )
 
-    # Fit UMAP. Embedding contains the new coordinates of datapoints in 1D space
-    embedding = reducer.fit_transform(transformed_df)
+    # Merge UMAP coordinates with metadata
+    umap_df = merge_metadata(results, metadata_df)
 
-    print("Dimensionality reduction completed")
-
-    # Add UMAP coordinates to dataframe
-    for i in range(N_COMP):
-        transformed_df["UMAP" + str(i + 1)] = embedding[:, i]
-
-    # drop VGGish feature columns now that UMAP has been run on them
-    results = transformed_df[
-        transformed_df.columns.drop(
-            list(transformed_df.filter(regex="feature_"))
-        )
-    ]
-    results = results.drop(["duration"], axis=1)
-    umap_df = results
-
-    # Merge metadata df and results indices
-    umap_df = umap_df.join(metadata_df.set_index("filename"))
-
-    # Store the embeddings in the umap dataframe
-    return umap_df  # Return the processed results
+    return umap_df  # Return the df with the UMAP coordinates
 
 
 print("Functions for Dimensionality Reduction successfully loaded")
